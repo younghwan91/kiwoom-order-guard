@@ -124,6 +124,10 @@ uv sync
 uv run pytest -q
 ```
 
+## 관련
+
+- [kiwoom-client](https://github.com/younghwan91/kiwoom-client) — 같은 저자의 키움 REST 파이썬 라이브러리. 내장 MCP 서버는 실전 계좌에서 주문 도구를 기본으로 등록하지 않는다.
+
 투자 권유가 아니다. 주문의 책임은 계좌 주인에게 있다. MIT.
 
 ---
