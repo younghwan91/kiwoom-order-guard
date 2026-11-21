@@ -1,0 +1,33 @@
+[project]
+name = "kiwoom-order-guard"
+version = "0.1.0"
+description = "Order-content guard hook for AI agents using Kiwoom Securities' official MCP/plugin — caps, market-order, duplicate and daily limits"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Younghwan Chae" }]
+keywords = ["kiwoom", "mcp", "claude-code", "trading", "risk", "guard", "korea"]
+dependencies = []
+
+[project.scripts]
+kog = "kiwoom_order_guard.cli:main"
+
+[project.urls]
+Repository = "https://github.com/younghwan91/kiwoom-order-guard"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["kiwoom_order_guard"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

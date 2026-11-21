@@ -1,0 +1,21 @@
+{
+  "name": "kiwoom-order-guard",
+  "description": "키움 공식 MCP·플러그인 옆에 얹는 주문 내용 검사 훅",
+  "owner": {
+    "name": "younghwan91",
+    "url": "https://github.com/younghwan91/kiwoom-order-guard"
+  },
+  "plugins": [
+    {
+      "name": "kiwoom-order-guard",
+      "source": "./",
+      "displayName": "키움 주문 가드",
+      "description": "AI 가 키움 공식 도구로 내는 주문의 금액·수량·시장가·반복·하루 횟수를 전송 전에 검사한다.",
+      "homepage": "https://github.com/younghwan91/kiwoom-order-guard",
+      "repository": "https://github.com/younghwan91/kiwoom-order-guard",
+      "license": "MIT",
+      "category": "finance",
+      "tags": ["kiwoom", "trading", "korea-stock", "risk"]
+    }
+  ]
+}

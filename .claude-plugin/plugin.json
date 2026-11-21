@@ -1,0 +1,11 @@
+{
+  "name": "kiwoom-order-guard",
+  "displayName": "키움 주문 가드",
+  "version": "0.1.0",
+  "description": "키움 공식 MCP·플러그인으로 AI 가 내는 주문의 내용(금액·수량 상한, 시장가 매수, 반복 전송, 하루 횟수, 종목 목록, 비상정지)을 전송 전에 검사한다.",
+  "author": {
+    "name": "Younghwan Chae"
+  },
+  "license": "MIT",
+  "keywords": ["kiwoom", "mcp", "trading", "risk", "guard", "korea"]
+}
