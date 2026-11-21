@@ -35,3 +35,9 @@ CRITICAL 2(실행 파일 변수·따옴표 쪼개기, kog check "$( )")·MAJOR 4
 - 편집 도구는 대상 경로만, settings.json 은 새로 쓰는 글만 본다. 주문 든 스크립트 파일 쓰기 차단.
 - 설정 오류 때 취소·매도 통과, 상태 폴더 쓰기 불가면 매수 차단, Post 기록 실패 경고.
 리뷰어 probe3 재실행: 우회 전부 막힘(이미 있는 스크립트 실행만 남음 — README). 테스트 86개.
+
+## 2026-11-21 실제 Claude Code 스모크 (증권사 접촉 없음)
+Claude Code 2.1.329 `claude -p --plugin-dir` 로 플러그인 로드, PATH 앞에 인자만 기록하는 가짜 kiwoomcli.
+1) 100주×70,000원 → Pre 훅 차단, 가짜 CLI 실행 안 됨  2) 1주×1,000원 → 실행됨, Post 훅이 state.json 에 1건 기록
+3) 같은 주문 → "반복 전송 의심" 차단. 가짜 CLI 로그 1줄(2번만). hooks.json 연결·exit 2 계약·Pre/Post 분리 실동작 확인.
+남은 실검증: 공식 kiwoom-exec MCP 의 실제 tool_name·tool_input 모양(모의투자 계좌, 사용자 승인 후).
