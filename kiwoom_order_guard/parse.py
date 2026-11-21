@@ -22,21 +22,25 @@ import re
 import shlex
 from dataclasses import dataclass
 
-__all__ = ["Order", "Unparseable", "looks_like_order", "orders_from_event"]
+__all__ = ["Order", "Unparseable", "looks_like_order", "orderish_text", "orders_from_event"]
 
 _CONTINUATION = re.compile(r"\\\r?\n")
-_TOOL = re.compile(r"kiwoomcli|kiwoom_cli|kw_runtime")
-_TOOL_TOKEN = re.compile(r"(?:^|[/\\])(kiwoomcli(?:\.exe)?|kiwoom_cli|kw_runtime[./\\]cli(?:\.py)?)$")
-_TOOL_IN_TEXT = re.compile(r"kiwoomcli|kiwoom_cli|kw_runtime[./\\]cli")
-_ORDERISH = re.compile(
-    r"(?:kiwoomcli|kiwoom_cli).*?\b(?:orders\s+(?:buy|sell|modify|cancel|credit-\w+|gold-\w+)|exchange\s+request)\b"
-    r".*?--confirm(?![\w-])"
-    r"|kw_runtime.*?\border-preview\b",
+# 따옴표·백슬래시를 지운 원문에서 찾는다 — 실행 파일 이름과 무관하게(`$KW`, `ki''woomcli` 도 걸리게).
+_STRICT = re.compile(
+    r"\borders\s+(?:buy|sell|modify|cancel|credit-\w+|gold-\w+)\b.*?--confirm(?![\w-])"
+    r"|\bexchange\s+request\b.*?--confirm(?![\w-])"
+    r"|\border-preview\b",
     re.DOTALL,
 )
-_LOOPS = re.compile(r"(?<![\w-])(for|while|until|xargs|parallel|watch)(?![\w-])")
-_OPERATOR = re.compile(r"^[;&|()<>\n]+$")
+_SQUASH = re.compile(r"[\"'\\]")
+_OPERATOR = re.compile(r"^[;&|()<>\n{}]+$")
+# 한 명령으로 여러 번 실행되는 구문: 구간 첫 토큰 / 어디든 / 함수 정의
+_LOOP_HEADS = {"for", "while", "until", "select", "function", "repeat"}
+_LOOP_ANY = {"xargs", "parallel", "watch", "-exec", "-execdir", "-ok"}
 _MCP_SUBMIT = re.compile(r"^mcp__.+__kiwoom_order_submit$")
+# 인자를 실행하지 않고 글자로만 다루는 명령 — 이걸로 시작하는 구간의 "orders buy" 는 주문이 아니다
+_TEXT_ONLY = {"grep", "egrep", "fgrep", "rg", "ag", "echo", "printf", "cat", "less", "more", "head", "tail",
+              "wc", "git", "man", "ls", "diff"}
 
 # kwcli 1.0.3 api_commands.csv 에서 safety_policy=order_write 인 명령 전부.
 _WRITE_ORDERS = {
@@ -49,6 +53,7 @@ _PLUGIN_FLAGS = {"kind", "side", "symbol", "qty", "order-type", "price", "market
 _OVERSEAS_EXCHANGES = {"NASDAQ", "NYSE", "AMEX"}
 _DOMESTIC_EXCHANGES = {"KRX", "NXT", "SOR"}
 _DOMESTIC_CODE = re.compile(r"^[0-9][0-9A-Z]{5}$")
+_GOLD_CODE = re.compile(r"^M0402\d{4}$")  # kwcli 금 현물 코드(M04020000·M04020100)
 _TICKER = re.compile(r"^[A-Z][A-Z0-9.\-]{0,9}$")
 _FALSY = {False, None, "false", "False", "0", ""}  # False == 0
 
@@ -73,11 +78,16 @@ class Order:
         return None if self.price is None else self.qty * self.price
 
 
+def orderish_text(text: str) -> bool:
+    """따옴표를 지운 글이 주문 전송·주문표 생성처럼 보이나(스크립트 파일 검사에도 쓴다)."""
+    return bool(_STRICT.search(_SQUASH.sub("", text)))
+
+
 def looks_like_order(event: dict) -> bool:
     name = str(event.get("tool_name") or "")
     if _MCP_SUBMIT.match(name):
         return True
-    return name == "Bash" and bool(_ORDERISH.search(_command(event)))
+    return name == "Bash" and orderish_text(_command(event))
 
 
 def orders_from_event(event: dict) -> list[Order]:
@@ -89,14 +99,9 @@ def orders_from_event(event: dict) -> list[Order]:
     if name != "Bash":
         return []
     command = _command(event)
-    if not _ORDERISH.search(command):
+    if not orderish_text(command):
         return []
-    if _LOOPS.search(command):
-        raise Unparseable("반복문·xargs 안의 주문은 보지 않는다 — 주문은 한 건씩 단독 명령으로")
-    orders, seen_tools = _from_tokens(_tokens(command))
-    if seen_tools < len(_TOOL_IN_TEXT.findall(command)):
-        raise Unparseable("따옴표·bash -c·$( ) 로 감싼 주문 명령은 해석하지 않는다 — 주문 명령을 그대로 실행")
-    return orders  # 모든 호출을 설명했고 전송이 없으면(프리뷰·kog check) 빈 목록
+    return _from_segments(_segments(_tokens(command)))
 
 
 def _command(event: dict) -> str:
@@ -107,7 +112,7 @@ def _command(event: dict) -> str:
 
 
 def _tokens(command: str) -> list[str]:
-    """따옴표를 먼저 풀고 연산자(; && || | ( ) 줄바꿈)를 따로 떼어 낸다."""
+    """따옴표를 먼저 풀고 연산자(; && || | ( ) { } 줄바꿈)를 따로 떼어 낸다."""
     lex = shlex.shlex(command, posix=True, punctuation_chars=";&|()<>\n")
     lex.whitespace = " \t\r"
     lex.whitespace_split = True
@@ -118,45 +123,63 @@ def _tokens(command: str) -> list[str]:
         raise Unparseable(f"명령을 나눌 수 없음: {exc}") from exc
 
 
-def _from_tokens(tokens: list[str]) -> tuple[list[Order], int]:
+def _segments(tokens: list[str]) -> list[list[str]]:
     segments: list[list[str]] = [[]]
-    for tok in tokens:
-        if _OPERATOR.match(tok):
+    for i, tok in enumerate(tokens):
+        if tok == "()" or (tok == "(" and i + 1 < len(tokens) and tokens[i + 1] == ")" and i > 0
+                           and not _OPERATOR.match(tokens[i - 1])):
+            raise Unparseable("함수 안의 주문은 보지 않는다 — 주문은 한 건씩 단독 명령으로")
+        if _OPERATOR.match(tok) or tok in ("{", "}"):
             segments.append([])
         else:
             segments[-1].append(tok)
+    return [s for s in segments if s]
+
+
+def _from_segments(segments: list[list[str]]) -> list[Order]:
     orders: list[Order] = []
-    seen = 0
     for seg in segments:
-        if seg[:2] == ["kog", "check"]:
-            # 판정만 해 보는 명령 — 인자의 주문 문자열은 실행되지 않는다
-            seen += sum(len(_TOOL_IN_TEXT.findall(t)) for t in seg[2:])
+        repeats = seg[0] in _LOOP_HEADS or bool(_LOOP_ANY.intersection(seg))
+        if repeats and any(orderish_text(" ".join(x)) for x in segments):
+            raise Unparseable("반복문·xargs·find -exec 안의 주문은 보지 않는다 — 주문은 한 건씩 단독 명령으로")
+        # kog check 와 글자만 다루는 명령(grep·echo·git…)은 인자를 실행하지 않는다 — 단 $( )·백틱은 셸이 실행한다
+        text_only = seg[:2] == ["kog", "check"] or seg[0] in _TEXT_ONLY
+        for tok in seg:
+            runs = "$(" in tok or "`" in tok
+            if (" " in tok or runs) and orderish_text(tok) and (runs or not text_only):
+                raise Unparseable("따옴표·bash -c·$( ) 로 감싼 주문 명령은 해석하지 않는다 — 주문 명령을 그대로 실행")
+        if text_only:
             continue
-        for i, tok in enumerate(seg):
-            m = _TOOL_TOKEN.search(tok)
-            if not m:
-                continue
-            seen += 1
-            order = _from_invocation(m.group(1), seg[i + 1:])
-            if order is not None:
-                orders.append(order)
-    return orders, seen
+        order = _from_segment(seg)
+        if order is not None:
+            orders.append(order)
+    return orders
+
+
+def _from_segment(seg: list[str]) -> Order | None:
+    """실행 파일이 무엇이든(kiwoomcli, $KW, python -m kiwoom_cli) 명령 구조로 찾는다."""
+    if "order-preview" in seg:
+        rest = seg[seg.index("order-preview") + 1:]
+        if "--help" in rest or "-h" in rest:
+            return None
+        return _from_plugin(_flags(rest, allowed=_PLUGIN_FLAGS))
+    for i in range(len(seg) - 2):
+        market, group, action = seg[i], seg[i + 1], seg[i + 2]
+        if group == "exchange" and action == "request" and market == "overseas":
+            return Order("kiwoomcli", "fx", "", "", 0, None, "") if "--confirm" in seg[i + 3:] else None
+        if group == "orders" and action in _WRITE_ORDERS:
+            flags = _flags(seg[i + 3:])
+            if "confirm" not in flags:
+                return None  # 미전송 프리뷰
+            return _from_cli(market, action, flags)
+    if orderish_text(" ".join(seg)):
+        raise Unparseable("주문처럼 보이는데 명령 구조를 읽지 못함")
+    return None
 
 
 def _from_invocation(tool: str, rest: list[str]) -> Order | None:
-    if tool.startswith("kw_runtime"):
-        if rest[:1] == ["order-preview"]:
-            return _from_plugin(_flags(rest[1:], allowed=_PLUGIN_FLAGS))
-        return None
-    # kiwoomcli / python -m kiwoom_cli
-    if len(rest) >= 3 and rest[0] == "overseas" and rest[1] == "exchange" and rest[2] == "request":
-        return Order("kiwoomcli", "fx", "", "", 0, None, "") if "--confirm" in rest else None
-    if len(rest) >= 3 and rest[1] == "orders" and rest[2] in _WRITE_ORDERS:
-        flags = _flags(rest[3:])
-        if "confirm" not in flags:
-            return None  # 미전송 프리뷰
-        return _from_cli(rest[0], rest[2], flags)
-    return None
+    """MCP 경로: command_path + options 를 kwcli 인자처럼 만든 뒤 같은 해석을 탄다."""
+    return _from_segment([tool, *rest])
 
 
 def _flags(tokens: list[str], *, allowed: set[str] | None = None) -> dict[str, str]:
@@ -230,7 +253,8 @@ def _from_cli(market: str, action: str, f: dict[str, str]) -> Order:
         raise Unparseable(f"알 수 없는 시장 {market!r}")
     if action.endswith("cancel"):
         return Order("kiwoomcli", "cancel", "", f.get("code", ""), 0, None, "", market)
-    code = _check_code(f.get("code", ""), market)
+    raw_code = f.get("code", "").strip().upper()
+    code = raw_code if action.startswith("gold-") and _GOLD_CODE.match(raw_code) else _check_code(raw_code, market)
     if action.endswith("modify"):
         if market == "overseas":
             return Order("kiwoomcli", "modify", "", code, 0, _price(f.get("price")), "", "overseas")

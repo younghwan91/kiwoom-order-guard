@@ -123,7 +123,6 @@ def test_mcp_confirm_truthiness_and_null_options():
     f'echo "$({BUY.format(c="005930", q=1, p=1000)})"',
     f"for i in $(seq 50); do {BUY.format(c='005930', q=1, p=1000)}; done",
     f"seq 50 | xargs -I{{}} {BUY.format(c='005930', q=1, p=1000)}",
-    "python -m kiwoom_cli.main domestic orders buy --code 005930 --qty 1 --price 1 --confirm",
 ])
 def test_unreadable_order_is_blocked(cmd):
     reasons = hook.decide(bash(cmd), now=NOW)
@@ -337,3 +336,92 @@ def test_default_config_matches_toml():
         got = getattr(default, k)
         assert (sorted(got) if isinstance(got, frozenset) else got) == v, k
     assert set(data) == set(Config.__dataclass_fields__)
+
+
+# ------------------------------------------------------------------ 2차 리뷰 재현 사례
+
+BIG = BUY.format(c="005930", q=5000, p=70000)
+
+
+@pytest.mark.parametrize("cmd", [
+    f"KW=~/.venv/bin/kiwoomcli; $KW {BIG.removeprefix('kiwoomcli ')}",
+    f"KW=$(command -v kiwoomcli); $KW {BIG.removeprefix('kiwoomcli ')}",
+    BIG.replace("kiwoomcli", "ki''woomcli"),
+    BIG.replace("kiwoomcli", "kiwoom\\cli"),
+    BIG.replace("orders buy", "orders 'buy'"),
+    BIG.replace("--confirm", "--con''firm"),
+    "python -m kiwoom_cli.main " + BIG.removeprefix("kiwoomcli "),
+])
+def test_executable_spelling_does_not_matter(cmd):
+    reasons = hook.decide(bash(cmd), now=NOW)
+    assert any("금액" in r for r in reasons), reasons
+
+
+@pytest.mark.parametrize("cmd", [
+    f'kiwoom""cli --version; bash -c "{BIG}"',
+    f'kog check "$({BIG})"',
+    f"kog check \"`{BIG}`\"",
+    f"f(){{ {BUY.format(c='005930', q=1, p=1000)}; }}; f; f; f",
+    f"function f {{ {BUY.format(c='005930', q=1, p=1000)}; }}; f; f",
+    f"find /etc -maxdepth 1 -exec {BUY.format(c='005930', q=1, p=1000)} \\;",
+])
+def test_wrappers_round2_blocked(cmd):
+    reasons = hook.decide(bash(cmd), now=NOW)
+    assert reasons and "해석하지 못해" in reasons[0], reasons
+
+
+@pytest.mark.parametrize("cmd", [
+    f"{BUY.format(c='005930', q=1, p=1000)} && echo 'placed order for 005930'",
+    "grep -rn 'for' plugin/kw_runtime/cli.py | grep order-preview",
+    "uv run python -m kw_runtime.cli order-preview --help",
+    "grep -rn KIWOOM_ORDER_GUARD_HOME .",
+    f'git commit -m "docs: example {BIG}"',
+])
+def test_round2_false_positives_pass(cmd):
+    assert hook.decide(bash(cmd), now=NOW) == []
+
+
+def test_script_file_with_order_is_blocked_but_docs_are_not():
+    ev = {"tool_name": "Write", "tool_input": {"file_path": "/tmp/o.sh", "content": f"#!/bin/sh\n{BIG}\n"}}
+    assert "스크립트" in hook.decide(ev, now=NOW)[0]
+    doc = {"tool_name": "Write", "tool_input": {"file_path": "/tmp/notes.md", "content": BIG}}
+    assert hook.decide(doc, now=NOW) == []
+
+
+def test_editing_this_repo_readme_with_config_path_passes():
+    ev = {"tool_name": "Edit", "tool_input": {"file_path": "/home/u/git/kiwoom-order-guard/README.md",
+                                              "old_string": "x", "new_string": "~/.config/kiwoom-order-guard/config.toml"}}
+    assert hook.decide(ev, now=NOW) == []
+
+
+def test_settings_write_keeping_guard_enabled_passes(tmp_path_factory):
+    settings = tmp_path_factory.mktemp("claude") / "settings.json"
+    settings.write_text('{"enabledPlugins": {"kiwoom-order-guard@kiwoom-order-guard": true}}')
+    keep = '{"permissions": {"allow": ["Bash(ls)"]}, "enabledPlugins": {"kiwoom-order-guard@kiwoom-order-guard": true}}'
+    drop = '{"permissions": {"allow": ["Bash(ls)"]}}'
+    ok = {"tool_name": "Write", "tool_input": {"file_path": str(settings), "content": keep}}
+    bad = {"tool_name": "Write", "tool_input": {"file_path": str(settings), "content": drop}}
+    env = {"tool_name": "Edit", "tool_input": {"file_path": str(settings), "old_string": "{",
+                                               "new_string": '{"env": {"KIWOOM_ORDER_GUARD_HOME": "/tmp/x"},'}}
+    assert hook.decide(ok, now=NOW) == []
+    assert hook.decide(bad, now=NOW) and hook.decide(env, now=NOW)
+
+
+def test_stop_delete_via_find_blocked():
+    assert hook.decide(bash("find ~/.config -name STOP -delete"), now=NOW)
+
+
+def test_gold_codes_and_config_error_policy(home):
+    gold = "kiwoomcli domestic orders gold-sell --code M04020000 --qty 1 --order-type limit --price 150000 --confirm"
+    assert hook.decide(bash(gold), now=NOW) == []
+    write_config(home, "typo = 1\n")
+    cancel = "kiwoomcli domestic orders cancel --order-id 1 --code 005930 --qty 1 --confirm"
+    sell = "kiwoomcli domestic orders sell --code 005930 --qty 1 --order-type market --confirm"
+    assert hook.decide(bash(cancel), now=NOW) == []
+    assert hook.decide(bash(sell), now=NOW) == []
+    assert "설정" in hook.decide(buy(), now=NOW)[0]
+
+
+def test_unwritable_state_blocks_buys(home, monkeypatch):
+    monkeypatch.setattr(hook, "_state_writable", lambda: False)
+    assert "상태 폴더" in hook.decide(buy(), now=NOW)[0]
