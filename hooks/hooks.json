@@ -10,6 +10,17 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --python 3.13 --directory \"${CLAUDE_PLUGIN_ROOT}\" python -m kiwoom_order_guard.hook post"
+          }
+        ]
+      }
     ]
   }
 }

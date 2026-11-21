@@ -16,7 +16,7 @@ import time
 from dataclasses import asdict
 
 from . import parse
-from .config import DEFAULT_TOML, config_dir, load_config, state_dir
+from .config import DEFAULT_TOML, INIT_MARKER, config_dir, load_config, state_dir
 from .rules import evaluate
 from .state import STOP_FILE, State
 
@@ -70,6 +70,8 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         home.mkdir(parents=True, exist_ok=True)
         cfg_path.write_text(DEFAULT_TOML, encoding="utf-8")
+        state_dir().mkdir(parents=True, exist_ok=True)
+        (state_dir() / INIT_MARKER).write_text(str(cfg_path), encoding="utf-8")
         print(f"만듦: {cfg_path}")
         return 0
     if a.cmd == "config":
@@ -79,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if a.cmd == "status":
         s = State.load(state_dir(), time.time())
-        print(f"날짜 {s.date} · 오늘 시도 {s.total}건 · 종목별 {s.by_code or '{}'}")
+        print(f"날짜 {s.date} · 오늘 매수 시도 {s.total}건 · 종목별 {s.by_code or '{}'}")
         print("비상정지: " + ("켜짐" if (home / STOP_FILE).exists() else "꺼짐"))
         return 0
     if a.cmd == "stop":
