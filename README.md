@@ -1,6 +1,16 @@
-# kiwoom-order-guard
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/brand/wordmark-dark.svg">
+  <img alt="kiwoom-order-guard" src="docs/images/brand/wordmark-light.svg" height="56">
+</picture>
 
-**AI 에이전트가 키움 공식 MCP·플러그인으로 내는 주문의 _내용_을 전송 전에 검사하는 Claude Code 훅.**
+**한국어** | [English](README.en.md)
+
+**AI 에이전트가 키움 공식 MCP·플러그인으로 내는 주문의 *내용*을 전송 전에 검사하는 Claude Code 훅.**
+
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/github/license/younghwan91/kiwoom-order-guard)](LICENSE)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-younghwan--chae-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/younghwan-chae/)
+
 공식 도구는 "사람이 확인했나"를 본다. 이 훅은 "확인할 만한 주문인가"를 본다.
 
 ```text
@@ -8,6 +18,31 @@ kiwoom-order-guard 차단:
 - 주문 금액 7,000,000원(100주×70,000원)이 상한 1,000,000원을 넘음
 한도는 사용자가 직접 바꾼다(터미널에서 `kog config`).
 ```
+
+- **주문 내용 직접 검증:** 1건 금액·수량 상한, 시장가 매수 차단, 120초 중복 매수 차단, 일일/종목당 횟수 제한을 전송 전에 강제한다.
+- **우회 방지 구조 파싱:** 실행 파일 이름이 아니라 명령 구조(`orders … --confirm`, `order-preview`, MCP `kiwoom_order_submit`)를 파싱하고, 변수·반복문·스크립트 작성 등 해석 불가 주문을 차단한다.
+- **제로 의존성 · 45ms 기동:** Python 3.11+ 표준 라이브러리만 사용하며, `uv` 기반 훅으로 Bash/MCP 호출당 ~90ms(전/후 훅)로 동작한다.
+- **사람 중심 통제:** 한도 설정(`kog init` / `kog config`)과 비상정지 해제(`kog resume`)는 터미널에서 사용자만 수행할 수 있으며, 에이전트의 설정 변경 시도는 차단된다.
+
+## 빠른 시작
+
+Claude Code 에서 플러그인 설치:
+
+```text
+/plugin marketplace add younghwan91/kiwoom-order-guard
+/plugin install kiwoom-order-guard@kiwoom-order-guard
+```
+
+한도는 **사람이 직접** 터미널에서 초기화하고 확인한다:
+
+```bash
+uvx --from git+https://github.com/younghwan91/kiwoom-order-guard kog init     # 기본 설정 파일 생성
+uvx --from git+https://github.com/younghwan91/kiwoom-order-guard kog config   # 설정 위치·내용 확인
+```
+
+- 설정 위치: Linux·macOS `~/.config/kiwoom-order-guard/config.toml`, Windows `%APPDATA%\kiwoom-order-guard\config.toml`.
+- 모르는 키나 형식이 틀린 값이 있으면 주문을 막는다. 오타 난 한도가 조용히 무시되지 않게 하려는 것이다.
+- `kog init` 을 한 번 했으면 설정 파일이 없어졌을 때도 주문을 막는다. 초기화 표시는 설정과 다른 폴더(상태 폴더)에 있다.
 
 ## 왜 필요한가
 
@@ -21,6 +56,16 @@ kiwoom-order-guard 차단:
 
 에이전트가 주문을 제안하고 사람이 "확인"을 누르는 일이 반복되면 확인은 습관이 된다.
 이 훅은 그 습관이 놓치는 주문을 잡는다.
+
+```mermaid
+flowchart LR
+    Agent["AI Agent\n(Claude Code)"] -->|"Bash / MCP 호출"| Pre["PreToolUse Hook\n명령 파싱 · 한도/규칙 검사"]
+    Pre -->|"위반 / 해석 불가 / 설정 변조"| Block["차단 (사유 반환)"]
+    Pre -->|"통과"| Exec["kiwoomcli / order-preview\n/ kiwoom_order_submit"]
+    Exec -->|"실행 완료"| Post["PostToolUse Hook\n일일/종목 횟수 · 중복 쿨다운 기록"]
+```
+
+## 검사 규칙과 기본값
 
 | 검사 | 기본값 | 대상 |
 |---|---|---|
@@ -47,29 +92,6 @@ kiwoom-order-guard 차단:
   주문이 든 스크립트 파일(`.sh`·`.py`·`.ps1` 등)을 쓰는 것도 막는다.
 - **횟수는 실제로 실행된 호출만 센다.** 기록은 PostToolUse 에서 한다. 권한 창에서 사람이 거부한 주문은 세지 않는다.
   한 호출에 주문이 여럿이면 앞 주문을 센 뒤 다음 주문을 판정한다.
-
-## 설치
-
-Claude Code 에서:
-
-```text
-/plugin marketplace add younghwan91/kiwoom-order-guard
-/plugin install kiwoom-order-guard@kiwoom-order-guard
-```
-
-훅은 공식 키움 플러그인과 같은 방식으로 `uv run --python 3.13` 로 돈다. 의존성은 없고 표준 라이브러리만 쓴다.
-훅 한 번에 `uv` 기동 시간이 약 45ms 든다(Linux 실측). Bash·MCP 호출에는 전(Pre)·후(Post) 훅이 둘 다 돌아 약 90ms, 편집 호출은 약 45ms 다.
-
-한도는 **사람이 직접** 정한다. 터미널에서:
-
-```bash
-uvx --from git+https://github.com/younghwan91/kiwoom-order-guard kog init     # 기본 설정 파일
-uvx --from git+https://github.com/younghwan91/kiwoom-order-guard kog config   # 위치·내용
-```
-
-- 설정 위치: Linux·macOS `~/.config/kiwoom-order-guard/config.toml`, Windows `%APPDATA%\kiwoom-order-guard\config.toml`.
-- 모르는 키나 형식이 틀린 값이 있으면 주문을 막는다. 오타 난 한도가 조용히 무시되지 않게 하려는 것이다.
-- `kog init` 을 한 번 했으면 설정 파일이 없어졌을 때도 주문을 막는다. 초기화 표시는 설정과 다른 폴더(상태 폴더)에 있다.
 
 ## 검사하는 주문 경로
 
@@ -124,11 +146,12 @@ uv sync
 uv run pytest -q
 ```
 
-## 관련
+## 관련 및 문서
 
+- [docs/ledger.md](docs/ledger.md) — 상태 원장 및 기록 구조
 - [kiwoom-client](https://github.com/younghwan91/kiwoom-client) — 같은 저자의 키움 REST 파이썬 라이브러리. 내장 MCP 서버는 실전 계좌에서 주문 도구를 기본으로 등록하지 않는다.
 
-투자 권유가 아니다. 주문의 책임은 계좌 주인에게 있다. MIT.
+투자 권유가 아니다. 주문의 책임은 계좌 주인에게 있다. [MIT](LICENSE).
 
 ---
 
