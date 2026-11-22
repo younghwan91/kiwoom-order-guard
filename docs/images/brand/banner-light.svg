@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 280" width="1200" height="280" fill="none">
+  <defs>
+    <linearGradient id="kog-banner-bg-l" x1="0" y1="0" x2="1200" y2="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="65%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#ECFDF5"/>
+    </linearGradient>
+    <radialGradient id="kog-glow-l" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(975 140) rotate(90) scale(160 240)">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="kog-mark-bg-l" x1="56" y1="48" x2="120" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="kog-shield-l" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <pattern id="kog-dots-l" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#CBD5E1" fill-opacity="0.55"/>
+    </pattern>
+  </defs>
+
+  <!-- Card Container -->
+  <rect x="1" y="1" width="1198" height="278" rx="20" fill="url(#kog-banner-bg-l)" stroke="#E2E8F0" stroke-width="1.5"/>
+  <rect x="740" y="16" width="444" height="248" rx="14" fill="url(#kog-dots-l)" opacity="0.7"/>
+  <rect x="720" y="2" width="478" height="276" rx="18" fill="url(#kog-glow-l)"/>
+
+  <!-- Left: Brand Mark (64x64) -->
+  <rect x="56" y="48" width="64" height="64" rx="14" fill="url(#kog-mark-bg-l)"/>
+  <rect x="57" y="49" width="62" height="62" rx="13" stroke="#334155" stroke-width="1.5"/>
+  <path d="M88 60L105 66.5V79.5C105 90.2 97.7 97.6 88 101C78.3 97.6 71 90.2 71 79.5V66.5L88 60Z" fill="url(#kog-shield-l)"/>
+  <path d="M88 63.5L101.5 68.7V79.3C101.5 88.1 95.6 94.2 88 97.2C80.4 94.2 74.5 88.1 74.5 79.3V68.7L88 63.5Z" stroke="#A7F3D0" stroke-opacity="0.45" stroke-width="1.2"/>
+  <path d="M80.5 80.5L85.5 85.5L95.5 74.5" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="102" cy="65" r="4" fill="#F59E0B" stroke="#0F172A" stroke-width="1.8"/>
+
+  <!-- Left: Title & Tagline & Tech Pills -->
+  <text x="138" y="88" fill="#0F172A" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="38" font-weight="800" letter-spacing="-0.025em">kiwoom-order-guard</text>
+  <text x="139" y="110" fill="#059669" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" letter-spacing="0.1em">AI AGENT ORDER GUARD HOOK</text>
+
+  <text x="56" y="156" fill="#334155" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="19.5" font-weight="500">Inspects AI agent Kiwoom order contents before transmission.</text>
+
+  <rect x="56" y="192" width="144" height="32" rx="16" fill="#0F172A"/>
+  <circle cx="74" cy="208" r="4" fill="#10B981"/>
+  <text x="86" y="213" fill="#F8FAFC" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600">Python 3.11+ Stdlib</text>
+
+  <rect x="212" y="192" width="146" height="32" rx="16" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1.2"/>
+  <text x="230" y="213" fill="#065F46" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600">Claude Code Hook</text>
+
+  <rect x="370" y="192" width="118" height="32" rx="16" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1.2"/>
+  <text x="388" y="213" fill="#92400E" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600">Pre-Trade Cap</text>
+
+  <!-- Right: Order-Guard Shield Vector Artwork -->
+  <circle cx="976" cy="140" r="108" stroke="#10B981" stroke-opacity="0.16" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <circle cx="976" cy="140" r="82" stroke="#10B981" stroke-opacity="0.28" stroke-width="1.5"/>
+
+  <!-- Incoming order stream lines -->
+  <path d="M792 108H888" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 5"/>
+  <path d="M774 140H882" stroke="#10B981" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M804 172H888" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 5"/>
+  <circle cx="844" cy="108" r="4.5" fill="#94A3B8"/>
+  <circle cx="826" cy="140" r="5" fill="#10B981"/>
+  <circle cx="852" cy="172" r="4.5" fill="#F59E0B"/>
+
+  <!-- Main Shield -->
+  <path d="M976 52L1044 78V130C1044 172.8 1014.8 202.4 976 216C937.2 202.4 908 172.8 908 130V78L976 52Z" fill="#0F172A"/>
+  <path d="M976 62L1034 84.2V129.5C1034 166.2 1009.2 191.8 976 204C942.8 191.8 918 166.2 918 129.5V84.2L976 62Z" fill="url(#kog-shield-l)"/>
+  <path d="M976 72L1024 90.5V129C1024 159.5 1003.4 181 976 191.5C948.6 181 928 159.5 928 129V90.5L976 72Z" stroke="#A7F3D0" stroke-opacity="0.55" stroke-width="1.5"/>
+  <path d="M948 134L967 153L1005 113" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Guard Cap Badge -->
+  <circle cx="1032" cy="72" r="14" fill="#F59E0B" stroke="#F8FAFC" stroke-width="4"/>
+  <path d="M1032 66V73" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="1032" cy="77.5" r="1.5" fill="#0F172A"/>
+
+  <!-- Outgoing verified line -->
+  <path d="M1058 140H1136" stroke="#10B981" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="1142" cy="140" r="5" fill="#10B981"/>
+</svg>
