@@ -95,6 +95,7 @@ uvx --from git+https://github.com/younghwan91/kiwoom-order-guard kog config   # 
 |---|---|
 | [상세 가이드](docs/guide.md) | 도입 배경, 검사 규칙 세부 사항, 주문 경로, `kog` 명령어, 개발 및 테스트 |
 | [원장 구조](docs/ledger.md) | 상태 원장 및 기록 구조 |
+| [기여 가이드](CONTRIBUTING.md) | 개발 환경, 테스트, 커밋·PR 규칙, good first issue |
 | [kiwoom-client](https://github.com/younghwan91/kiwoom-client) | 같은 저자의 키움 REST 파이썬 라이브러리 |
 
 ## 라이선스
