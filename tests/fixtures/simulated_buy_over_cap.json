@@ -1,0 +1,1 @@
+{"tool_name": "mcp__kiwoom-exec__kiwoom_order_submit", "tool_input": {"command_path": "domestic orders buy", "options": {"code": "005930", "qty": 100, "order-type": "limit", "price": 70000}, "confirm": true}}

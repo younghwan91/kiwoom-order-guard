@@ -425,3 +425,13 @@ def test_gold_codes_and_config_error_policy(home):
 def test_unwritable_state_blocks_buys(home, monkeypatch):
     monkeypatch.setattr(hook, "_state_writable", lambda: False)
     assert "상태 폴더" in hook.decide(buy(), now=NOW)[0]
+
+
+# ------------------------------------------------------------------ README 데모 입력
+
+def test_readme_demo_fixture_is_blocked(home):
+    """README 데모 그림(scripts/demo.py)이 쓰는 가짜 주문이 실제로 막히는지 고정한다."""
+    write_config(home, DEFAULT_TOML)
+    event = json.loads((ROOT / "tests/fixtures/simulated_buy_over_cap.json").read_text(encoding="utf-8"))
+    reasons = hook.decide(event, now=NOW)
+    assert any("7,000,000" in r and "1,000,000" in r for r in reasons)
