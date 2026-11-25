@@ -11,21 +11,25 @@
 
 공식 도구는 "사람이 확인했나"를 봅니다. 이 훅은 "확인할 만한 주문인가"를 봅니다.
 
+[![CI](https://github.com/younghwan91/kiwoom-order-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/younghwan91/kiwoom-order-guard/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/younghwan91/kiwoom-order-guard)](LICENSE)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-younghwan--chae-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/younghwan-chae/)
 
-[빠른 시작](#빠른-시작) · [상세 가이드](docs/guide.md) · [원장 구조](docs/ledger.md) · [English](README.en.md)
+[빠른 시작](#빠른-시작) · [상세 가이드](docs/guide.md) · [원장 구조](docs/ledger.md) · [kiwoom-client](https://github.com/younghwan91/kiwoom-client) · [English](README.en.md)
 
 </div>
 
-```text
-kiwoom-order-guard 차단:
-- 주문 금액 7,000,000원(100주×70,000원)이 상한 1,000,000원을 넘음
-한도는 사용자가 직접 바꾼다(터미널에서 `kog config`).
-```
+<p align="center">
+  <img alt="시뮬레이션 주문을 kiwoom-order-guard 가 막는 터미널 화면" src="docs/images/demo-block.svg" width="760">
+</p>
 
-<p align="center"><sub>금액·수량·중복 매수 한도를 넘으면 실행 전에 사유와 함께 주문을 막습니다.</sub></p>
+<p align="center"><sub><b>시뮬레이션 주문</b>(키·계좌·전송 없음) — 1건 상한 100만원을 넘는 700만원 매수를 훅이 실제로 막은 출력입니다. 입력은 <code>tests/fixtures/simulated_buy_over_cap.json</code>.</sub></p>
+
+```bash
+# 이 화면을 직접 다시 만드는 명령(레포 루트에서)
+uv run --no-project --python 3.13 --with rich python scripts/demo.py
+```
 
 ## 빠른 시작
 
@@ -80,6 +84,10 @@ uvx --from git+https://github.com/younghwan91/kiwoom-order-guard kog config   # 
 - **가드 우회와 설정 오류**: 글자 맞추기 방식의 설정 변조 방어는 마음먹은 에이전트가 돌아갈 수 있으며, 설정 파일 오류·누락 시에는 매수·정정만 막고 취소·매도는 통과시킵니다.
 
 자세한 한계와 오탐 예외는 [못 막는 것 상세](docs/guide.md#못-막는-것-상세)에 정리되어 있습니다.
+
+## 함께 쓰는 레포
+
+에이전트가 키움 REST 를 파이썬으로 직접 부르게 하려면 같은 저자의 **[kiwoom-client](https://github.com/younghwan91/kiwoom-client)** 를 씁니다. 이 가드는 Claude Code 안에서 나가는 주문을 검사하고, kiwoom-client 는 시세·잔고·주문 호출을 맡습니다.
 
 ## 문서
 

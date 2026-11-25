@@ -11,21 +11,25 @@
 
 Official tools check *whether a human confirmed*. This hook checks *whether the order is worth confirming*.
 
+[![CI](https://github.com/younghwan91/kiwoom-order-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/younghwan91/kiwoom-order-guard/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/younghwan91/kiwoom-order-guard)](LICENSE)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-younghwan--chae-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/younghwan-chae/)
 
-[Quick Start](#quick-start) · [Detailed Guide](docs/guide.en.md) · [State Ledger](docs/ledger.md) · [한국어](README.md)
+[Quick Start](#quick-start) · [Detailed Guide](docs/guide.en.md) · [State Ledger](docs/ledger.md) · [kiwoom-client](https://github.com/younghwan91/kiwoom-client) · [한국어](README.md)
 
 </div>
 
-```text
-kiwoom-order-guard blocked:
-- Order amount 7,000,000 KRW (100 shares × 70,000 KRW) exceeds cap 1,000,000 KRW
-Limits are changed directly by the user (`kog config` in terminal).
-```
+<p align="center">
+  <img alt="Terminal output of kiwoom-order-guard blocking a simulated order" src="docs/images/demo-block.svg" width="760">
+</p>
 
-<p align="center"><sub>Orders exceeding amount, quantity, or duplicate-buy limits are blocked with a reason before execution.</sub></p>
+<p align="center"><sub><b>Simulated order</b> (no keys, no account, nothing sent) — real hook output blocking a 7,000,000 KRW buy over the 1,000,000 KRW per-order cap. Input: <code>tests/fixtures/simulated_buy_over_cap.json</code>.</sub></p>
+
+```bash
+# Reproduce this screen (from the repo root)
+uv run --no-project --python 3.13 --with rich python scripts/demo.py
+```
 
 ## Quick Start
 
@@ -80,6 +84,10 @@ This hook is a seatbelt, not a vault.
 - **Tampering & config errors**: String-matching protections can be worked around by a determined agent; on config errors or missing files, buys and modifies are blocked while cancels and sells pass through.
 
 See [Limitations in Detail](docs/guide.en.md#limitations-in-detail) for the full list and false-positive exceptions.
+
+## Companion repo
+
+To let an agent call Kiwoom REST directly from Python, use **[kiwoom-client](https://github.com/younghwan91/kiwoom-client)** by the same author. This guard inspects orders leaving Claude Code; kiwoom-client handles quotes, balances and order calls.
 
 ## Documentation
 
